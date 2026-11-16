@@ -1,0 +1,47 @@
+
+This directory is intended for PlatformIO Test Runner and project tests.
+
+Unit Testing is a software testing method by which individual units of
+source code, sets of one or more MCU program modules together with associated
+control data, usage procedures, and operating procedures, are tested to
+determine whether they are fit for use. Unit testing finds problems early
+in the development cycle.
+
+More information about PlatformIO Unit Testing:
+- https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
+
+Run the hardware-independent cleaning command tests from PowerShell:
+- `g++ -std=c++11 -Wall -Wextra -Werror -I src src/cleaning_command.cpp src/cleaning_phase.cpp test/test_cleaning_command/test_main.cpp -o cleaning_command_tests.exe`
+- `.\cleaning_command_tests.exe`
+
+ESP-NOW cleaning acknowledgements require the receiver to use the same
+`cleaning.h` and `cleaning.cpp` files. Initialize ESP-NOW with the sender MAC
+and register a handler on the receiver:
+
+```cpp
+bool applyCleaningCommand(const CleaningCommand &command)
+{
+  // Apply fan settings here. Return true only after they are applied.
+  return true;
+}
+
+void setup()
+{
+  WiFi.mode(WIFI_STA);
+  beginCleaningEspNow(SENDER_MAC);
+  setCleaningCommandHandler(applyCleaningCommand);
+}
+```
+
+The receiver acknowledges successfully applied commands automatically. The
+sender retries up to three times and advances to phase 2 only after receiving
+the matching acknowledgement.
+
+RTC and EEPROM access is in `src/rtc_storage.h` and `src/rtc_storage.cpp`.
+Call `beginRtcStorage()` once during setup, then use:
+- `getRtcTimestamp()` to read the current `DDHHMM` timestamp.
+- `saveDirtyMeasurements()` and `loadDirtyMeasurements()` for the 60 readings
+  and six timestamps stored in EEPROM.
+- `saveCleaningPhase()` and `loadCleaningPhase()` for the saved phase.
+- `adjustRtcToBuildTime()` only when intentionally setting the DS3231 to the
+  firmware build time.
